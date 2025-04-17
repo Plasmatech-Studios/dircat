@@ -1,4 +1,3 @@
-// main.go
 package main
 
 import (
@@ -9,15 +8,11 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/plasmatechstudios/dircat"
-)
-
-const (
-	configName    = ".dircat.json"
-	defaultOutput = "directorycontents.json"
+	"github.com/Plasmatech-Studios/dircat/pkg/dircat"
 )
 
 func main() {
+	// parse help flag
 	help := flag.Bool("h", false, "show help")
 	flag.Parse()
 	if *help {
@@ -25,35 +20,45 @@ func main() {
 		os.Exit(0)
 	}
 
-	// 1) load config
-	raw, err := os.ReadFile(configName)
+	// attempt to load config file
+	raw, err := os.ReadFile(dircat.DefaultConfigFileName)
+	var b dircat.Bundler
+	var outputName string
+
 	if err != nil {
-		log.Fatalf("cannot load %s: %v (run `dircat init`)", configName, err)
-	}
-	var diskCfg struct {
-		OutputName     string   `json:"outputName"`
-		IgnorePatterns []string `json:"ignorePatterns"`
-	}
-	if err := json.Unmarshal(raw, &diskCfg); err != nil {
-		log.Fatalf("invalid %s: %v", configName, err)
+		// no config found → use defaults
+		b = dircat.NewDefaultBundler()
+		outputName = dircat.DefaultOutputName
+	} else {
+		// parse custom config
+		var diskCfg struct {
+			OutputName     string   `json:"outputName"`
+			IgnorePatterns []string `json:"ignorePatterns"`
+		}
+		if err := json.Unmarshal(raw, &diskCfg); err != nil {
+			log.Printf("invalid %s: %v; using default config", dircat.DefaultConfigFileName, err)
+			b = dircat.NewDefaultBundler()
+			outputName = dircat.DefaultOutputName
+		} else {
+			b = dircat.NewBundler(dircat.Config{IgnorePatterns: diskCfg.IgnorePatterns})
+			outputName = diskCfg.OutputName
+		}
 	}
 
-	// 2) choose root
+	// determine root directory
 	root := "."
 	if args := flag.Args(); len(args) > 0 {
 		root = args[0]
 	}
 
-	// 3) call the reusable Bundle function
-	entries, err := dircat.Bundle(root, dircat.Config{
-		IgnorePatterns: diskCfg.IgnorePatterns,
-	})
+	// perform bundling
+	entries, err := b.Bundle(root)
 	if err != nil {
 		log.Fatalf("error bundling directory: %v", err)
 	}
 
-	// 4) write JSON output
-	outPath := filepath.Join(root, diskCfg.OutputName)
+	// write JSON output
+	outPath := filepath.Join(root, outputName)
 	f, err := os.Create(outPath)
 	if err != nil {
 		log.Fatalf("cannot create %s: %v", outPath, err)
@@ -66,5 +71,6 @@ func main() {
 		log.Fatalf("failed to write JSON: %v", err)
 	}
 
+	// summary
 	fmt.Printf("✅ Done—processed %d files and wrote %s\n", len(entries), outPath)
 }
