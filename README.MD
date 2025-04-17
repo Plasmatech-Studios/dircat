@@ -1,65 +1,66 @@
 # dircat
 
-A configurable CLI tool that recursively scans a directory, skips hidden and binary files, and bundles all text file contents into a single JSON output—with customizable ignore patterns.
+A configurable CLI tool and Go library that recursively scans a directory, skips hidden and binary files, and bundles all text file contents into a single JSON output, with customizable ignore patterns.
 
-## Features
+---
 
-- **Init**  
-  `dircat init`  
-  Creates a `.dircat.json` in the current folder with sensible defaults (output filename, ignore globs).
+## 📦 Features
 
-- **Bundle**  
-  `dircat [path]`  
-  Reads your config, scans `path` (defaults to `.`), skips:
-  - Hidden files/directories (names beginning with `.`)
-  - Any globs you listed
-  - Binary files (detected by NUL-byte sniff)
-  
-  Bundles each text file into a JSON array entry:
-  ```json
-  {
-    "filename": "main.go",
-    "directory": ".",
-    "content": "package main …"
-  }
-  ```
+- **Configurable**: Define ignore patterns and output filename in a `.dircat.json` file.
+- **Defaults**: If no config is present or it’s invalid, dircat falls back to built-in defaults.
+- **CLI & Library**: Use the `dircat` command-line tool or import the package into your Go project.
+- **Skip Hidden/Binary**: Automatically ignores files/directories starting with `.` and binary files (NUL-byte sniff).
 
-- **Live Spinner**  
-  Shows `| / – \` cycling as it processes each file, all on one line.
+---
 
-- **Summary**  
-  Prints `✅ Done—processed X files and wrote JSON bundle to <output>` at completion.
-
-## Installation
+## ⚙️ Installation (CLI)
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/dircat.git
+git clone https://github.com/Plasmatech-Studios/dircat.git
 cd dircat
 
-# Build the binary
-go build -o dircat main.go
+# Build the CLI binary
+go build -o dircat ./cmd/dircat
 
-# (Optional) Move it to your PATH
-mv dircat /usr/local/bin/
+# (Optional) Move it into your PATH (overwriting any existing dircat)
+sudo mv -f dircat /usr/local/bin/dircat
 ```
 
-## Usage
+---
 
-```bash
-# Initialize config in current directory
-dircat init
+## 🚀 Usage (CLI)
 
-# Bundle files under current directory
+1. **Initialize** (optional):
+   ```bash
+   dircat init
+   ```
+   Creates a `.dircat.json` with defaults in the current directory.
+
+2. **Run**:
+   ```bash
+   # Scan current directory and produce JSON in ./directorycontents.json
 dircat
 
-# Bundle files in another folder
+# Or scan a specific folder:
 dircat /path/to/project
+   ```
+
+3. **Output**:
+   - Reads files under the specified root (default `.`).
+   - Writes JSON to the root directory, named according to your config (default `directorycontents.json`).
+
+---
+
+## ⚙️ Configuration
+
+Copy the example to create a config:
+```bash
+cp .dircat.json.example .dircat.json
 ```
 
-## Configuration
+Edit **`.dircat.json`**:
 
-Edit `.dircat.json` to tweak:
 ```json
 {
   "outputName": "directorycontents.json",
@@ -70,7 +71,60 @@ Edit `.dircat.json` to tweak:
 }
 ```
 
-## License
+- **outputName**: Filename for the JSON bundle, placed in the root directory scanned.
+- **ignorePatterns**: Glob patterns (relative to the root) to exclude from scanning.
+
+---
+
+## 📦 Usage (Go Library)
+
+Import and call from your code:
+
+```go
+import (
+  "fmt"
+  "github.com/Plasmatech-Studios/dircat/pkg/dircat"
+)
+
+func main() {
+  // 1) Choose bundler: default or custom
+  b := dircat.NewDefaultBundler()
+  // Or load custom config...
+  // config := dircat.Config{IgnorePatterns: []string{"vendor/*"}}
+  // b := dircat.NewBundler(config)
+
+  // 2) Bundle files under "./myproject"
+  entries, err := b.Bundle("./myproject")
+  if err != nil {
+    panic(err)
+  }
+
+  // 3) Work with results
+  for _, e := range entries {
+    fmt.Printf("%s/%s: %d bytes\n", e.Directory, e.Filename, len(e.Content))
+  }
+}
+```
+
+---
+
+## 🗂️ Repository Layout
+
+```
+dircat/                        # module root
+├── cmd/dircat/                # CLI entrypoint
+│   └── main.go                # loads config, calls package, writes JSON
+├── pkg/dircat/                # importable library
+│   └── dircat.go              # Bundle logic, Config, Entry definitions
+├── .dircat.json.example       # sample config
+├── README.md                  # this file
+├── LICENSE                    # MIT License
+└── go.mod                     # module declaration
+```
+
+---
+
+## 📝 License
 
 Released under the [MIT License](LICENSE).
 
