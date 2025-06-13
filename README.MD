@@ -66,7 +66,8 @@ Edit **`.dircat.json`**:
   "outputName": "directorycontents.json",
   "ignorePatterns": [
     ".dircat.json",
-    "directorycontents.json"
+    "directorycontents.json",
+    "node_modules/*"
   ]
 }
 ```

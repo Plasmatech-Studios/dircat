@@ -44,10 +44,14 @@ func NewBundler(cfg Config) Bundler {
 }
 
 // NewDefaultBundler creates a Bundler with default settings.
-// It skips the default config file and default output name.
+// It skips the default config file, default output name, and node_modules.
 func NewDefaultBundler() Bundler {
 	return &bundler{cfg: Config{
-		IgnorePatterns: []string{DefaultConfigFileName, DefaultOutputName},
+		IgnorePatterns: []string{
+			DefaultConfigFileName,
+			DefaultOutputName,
+			"node_modules/*",
+		},
 	}}
 }
 

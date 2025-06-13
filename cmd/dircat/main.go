@@ -11,12 +11,24 @@ import (
 	"github.com/Plasmatech-Studios/dircat/pkg/dircat"
 )
 
+const version = "1.1.0"
+
 func main() {
-	// parse help flag
+	// parse flags
 	help := flag.Bool("h", false, "show help")
+	showVersion := flag.Bool("version", false, "show version")
 	flag.Parse()
+
 	if *help {
 		fmt.Println("Usage: dircat [path]")
+		fmt.Println("Options:")
+		fmt.Println("  -h        show help")
+		fmt.Println("  --version show version")
+		os.Exit(0)
+	}
+
+	if *showVersion {
+		fmt.Printf("dircat version %s\n", version)
 		os.Exit(0)
 	}
 
